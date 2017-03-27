@@ -1,7 +1,7 @@
-chat6 = {}
-chat6.message_normal = "normal"
-chat6.message_action = "action"
-chat6.message_private = "private"
+local player_name = "cheapie"
+local highlight_color = "#4E9A06"
+local send_nick_color = "#A40000"
+local send_message_color = "#888A85"
 
 local nick_colors = {
 	"#4E9A06", --19
@@ -16,93 +16,79 @@ local nick_colors = {
 }
 
 local function get_nick_color(nick)
+	local username,extra = string.match(nick,"^(.*)@(.*)$")
+	if extra then nick = username end
 	local color = 0
 	for i=1,string.len(nick),1 do
-		color = color + string.byte(string.sub(nick,i,i))
+		color = color + string.byte(nick,i,i)
 	end
 	color = color % #nick_colors
 	return(nick_colors[color+1])
 end
 
-function chat6.send_colored_message(fromname,msg,toname,msgtype)
-	if msgtype == chat6.message_private then
-		local highlight = minetest.setting_get("chat6.highlight_color") or "#4E9A06"
-		if (not toname) or (not msg) then
-			minetest.chat_send_player(fromname,minetest.colorize("#FF0000","Error")..": Player name or message missing")
-			return false
+minetest.register_on_receiving_chat_messages(function(message)
+	local msgtype
+	local user
+	local text
+	if string.sub(message,1,1) == "<" then
+		msgtype = "channel"
+		user,text = string.match(message,"^<(%g*)> (.*)$")
+		if not user then
+			msgtype = "special"
+			text = message
 		end
-		if not minetest.get_player_by_name(toname) then
-			minetest.chat_send_player(fromname,minetest.colorize("#FF0000","Error")..": Target player is not online")
-			return false
+		if user == player_name then
+			msgtype = "sent_channel"
+		elseif string.find(text,player_name) then
+			msgtype = "highlight_channel"
 		end
-		local colorednick = minetest.colorize(highlight,fromname)
-		local coloredmessage = minetest.colorize(highlight,message)
-		minetest.chat_send_player(fromname,"Message sent.")
-		minetest.chat_send_player(toname,string.format("PM from %s: %s",fromname,coloredmessage))
-	elseif msgtype == chat6.message_action then
-		local outgoingnick = minetest.setting_get("chat6.outgoing_nick_color") or "#CC0000"
-		local outgoingmsg = minetest.setting_get("chat6.outgoing_message_color") or "#CCCCCC"
-		local highlight = minetest.setting_get("chat6.highlight_color") or "#4E9A06"
-		local players = minetest.get_connected_players()
-		for _,player in pairs(players) do
-			local toname = player:get_player_name()
-			if toname == fromname then
-				local colorednick = minetest.colorize(outgoingnick,fromname)
-				local coloredmessage = minetest.colorize(outgoingmsg,msg)
-				minetest.chat_send_player(toname,string.format("* %s %s",colorednick,coloredmessage))
-			elseif string.find(msg,toname) then
-				local colorednick = minetest.colorize(highlight,fromname)
-				local coloredmessage = minetest.colorize(highlight,msg)
-				minetest.chat_send_player(toname,string.format("* %s %s",colorednick,coloredmessage))
-			else
-				local colorednick = minetest.colorize(get_nick_color(fromname),fromname)
-				minetest.chat_send_player(toname,string.format("* %s %s",colorednick,msg))
-			end
+	elseif string.sub(message,1,3) == "***" then
+		user,msgtype,text = string.match(message,"^*** (%g*) (%g*) the game. ?(.*)$")
+		if not text or text == "" then
+			text = "(Client Quit)"
+		end
+	elseif string.sub(message,1,1) == "*" then
+		msgtype = "action"
+		user,text = string.match(message,"^* (%g*) (.*)$")
+		if not user then
+			msgtype = "special"
+			text = message
+		end
+		if user == player_name then
+			msgtype = "sent_action"
+		elseif string.find(text,player_name) then
+			msgtype = "highlight_action"
 		end
 	else
-		local outgoingnick = minetest.setting_get("chat6.outgoing_nick_color") or "#CC0000"
-		local outgoingmsg = minetest.setting_get("chat6.outgoing_message_color") or "#CCCCCC"
-		local highlight = minetest.setting_get("chat6.highlight_color") or "#4E9A06"
-		local players = minetest.get_connected_players()
-		for _,player in pairs(players) do
-			local toname = player:get_player_name()
-			if toname == fromname then
-				local colorednick = minetest.colorize(outgoingnick,fromname)
-				local coloredmessage = minetest.colorize(outgoingmsg,msg)
-				minetest.chat_send_player(toname,string.format("<%s> %s",colorednick,coloredmessage))
-			elseif string.find(msg,toname) then
-				local colorednick = minetest.colorize(highlight,fromname)
-				local coloredmessage = minetest.colorize(highlight,msg)
-				minetest.chat_send_player(toname,string.format("<%s> %s",colorednick,coloredmessage))
-			else
-				local colorednick = minetest.colorize(get_nick_color(fromname),fromname)
-				minetest.chat_send_player(toname,string.format("<%s> %s",colorednick,msg))
-			end
-		end
+		msgtype = "special"
+		text = message
 	end
-end
-
-minetest.register_on_chat_message(function(fromname,msg)
-	if string.sub(msg,1,1) == "/" then
-		return false
-	end
-	chat6.send_colored_message(fromname,msg,nil,chat6.message_normal)
-	if minetest.get_modpath("irc") then
-		irc:say(string.format("<%s> %s",fromname,msg))
+	if msgtype == "special" then
+		minetest.display_chat_message(text)
+	elseif msgtype == "joined" then
+		local coloredmsg = minetest.colorize("#CE5C00",string.format("* %s has joined",user))
+		minetest.display_chat_message(coloredmsg)
+	elseif msgtype == "left" then
+		local coloredmsg = minetest.colorize("#C4A000",string.format("* %s has quit %s",user,text))
+		minetest.display_chat_message(coloredmsg)
+	elseif msgtype == "channel" then
+		local colorednick = minetest.colorize(get_nick_color(user),user)
+		minetest.display_chat_message(string.format("<%s> %s",colorednick,text))
+	elseif msgtype == "action" then
+		local colorednick = minetest.colorize(get_nick_color(user),user)
+		minetest.display_chat_message(string.format("* %s %s",colorednick,text))
+	elseif msgtype == "sent_channel" then
+		local colorednick = minetest.colorize(send_nick_color,user)
+		local coloredtext = minetest.colorize(send_message_color,text)
+		minetest.display_chat_message(string.format("<%s> %s",colorednick,coloredtext))
+	elseif msgtype == "sent_action" then
+		local colorednick = minetest.colorize(send_nick_color,user)
+		local coloredtext = minetest.colorize(send_message_color,text)
+		minetest.display_chat_message(string.format("* %s %s",colorednick,coloredtext))
+	elseif msgtype == "highlight_channel" then
+		minetest.display_chat_message(minetest.colorize(highlight_color,string.format("<%s> %s",user,text)))
+	elseif msgtype == "highlight_action" then
+		minetest.display_chat_message(minetest.colorize(highlight_color,string.format("* %s %s",user,text)))
 	end
 	return true
 end)
-
-minetest.override_chatcommand("me",{func=function(fromname,msg)
-	chat6.send_colored_message(fromname,msg,nil,chat6.message_action)
-	if minetest.get_modpath("irc") then
-		irc:say(string.format("* %s %s",fromname,msg))
-	end
-	return true
-end})
-
-minetest.override_chatcommand("msg",{func=function(fromname,msg)
-	local toname, message = msg:match("^(%S+)%s(.+)$")
-	chat6.send_colored_message(fromname,message,toname,chat6.message_private)
-	return true
-end})
