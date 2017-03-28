@@ -2,6 +2,8 @@ local player_name = "cheapie"
 local highlight_color = "#4E9A06"
 local send_nick_color = "#A40000"
 local send_message_color = "#888A85"
+local join_color = "#CE5C00"
+local part_color = "#C4A000"
 local timestamps = true
 
 local nick_colors = {
@@ -72,10 +74,10 @@ minetest.register_on_receiving_chat_messages(function(message)
 	if msgtype == "special" then
 		minetest.display_chat_message(timestamp..text)
 	elseif msgtype == "joined" then
-		local coloredmsg = minetest.colorize("#CE5C00",string.format("* %s has joined",user))
+		local coloredmsg = minetest.colorize(join_color,string.format("* %s has joined",user))
 		minetest.display_chat_message(timestamp..coloredmsg)
 	elseif msgtype == "left" then
-		local coloredmsg = minetest.colorize("#C4A000",string.format("* %s has quit %s",user,text))
+		local coloredmsg = minetest.colorize(part_color,string.format("* %s has quit %s",user,text))
 		minetest.display_chat_message(timestamp..coloredmsg)
 	elseif msgtype == "channel" then
 		local colorednick = minetest.colorize(get_nick_color(user),user)
