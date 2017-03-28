@@ -30,6 +30,9 @@ local function get_nick_color(nick)
 end
 
 minetest.register_on_receiving_chat_messages(function(message)
+	if color and type(color.strip_colors) == "function" then
+		message = color.strip_colors(message)
+	end
 	local msgtype
 	local user
 	local text
@@ -45,7 +48,7 @@ minetest.register_on_receiving_chat_messages(function(message)
 			msgtype = "special"
 			text = message
 		end
-		if user == player_name then
+		if (user == player_name) or (string.match(user,"^(.*)@") == player_name) then
 			msgtype = "sent_channel"
 		elseif string.find(text,player_name) then
 			msgtype = "highlight_channel"
@@ -62,7 +65,7 @@ minetest.register_on_receiving_chat_messages(function(message)
 			msgtype = "special"
 			text = message
 		end
-		if user == player_name then
+		if (user == player_name) or (string.match(user,"^(.*)@") == player_name) then
 			msgtype = "sent_action"
 		elseif string.find(text,player_name) then
 			msgtype = "highlight_action"
