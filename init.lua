@@ -43,7 +43,7 @@ minetest.register_on_receiving_chat_messages(function(message)
 	end
 	if string.sub(message,1,1) == "<" then
 		msgtype = "channel"
-		user,text = string.match(message,"^<(%g*)> (.*)$")
+		user,text = string.match(message,"^<([^%c ]*)> (.*)$")
 		if not user then
 			msgtype = "special"
 			text = message
@@ -53,18 +53,17 @@ minetest.register_on_receiving_chat_messages(function(message)
 			msgtype = "highlight_channel"
 		end
 	elseif string.sub(message,1,3) == "***" then
-		user,msgtype,text = string.match(message,"^*** (%g*) (%g*) the game. ?(.*)$")
+		user,msgtype,text = string.match(message,"^*** ([^%c ]*) ([^%c ]*) the game. ?(.*)$")
 		if not text or text == "" then
 			text = "(Client Quit)"
 		end
 	elseif string.sub(message,1,1) == "*" then
 		msgtype = "action"
-		user,text = string.match(message,"^* (%g*) (.*)$")
+		user,text = string.match(message,"^* ([^%c ]*) (.*)$")
 		if not user then
 			msgtype = "special"
 			text = message
-		end
-		if (user == player_name) or (string.match(user,"^(.*)@") == player_name) then
+		elseif (user == player_name) or (string.match(user,"^(.*)@") == player_name) then
 			msgtype = "sent_action"
 		elseif string.find(text,player_name) then
 			msgtype = "highlight_action"
