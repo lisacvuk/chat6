@@ -47,8 +47,7 @@ minetest.register_on_receiving_chat_messages(function(message)
 		if not user then
 			msgtype = "special"
 			text = message
-		end
-		if (user == player_name) or (string.match(user,"^(.*)@") == player_name) then
+		elseif (user == player_name) or (string.match(user,"^(.*)@") == player_name) then
 			msgtype = "sent_channel"
 		elseif string.find(text,player_name) then
 			msgtype = "highlight_channel"
