@@ -89,7 +89,7 @@ local function get_nick_color(nick)
 	return(nick_colors[color+1])
 end
 
-minetest.register_on_receiving_chat_messages(function(message)
+minetest.register_on_receiving_chat_message(function(message)
 	if color and type(color.strip_colors) == "function" then
 		message = color.strip_colors(message)
 	end
